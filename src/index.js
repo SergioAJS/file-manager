@@ -53,6 +53,18 @@ const question = () => {
                 console.log(`\nYou are currently in ${currentDirectory}\n`);
                 question();
                 break;
+            case `${command.match(/^cd{1}\s.*/)}`:
+                try {
+                    process.chdir(command.split(' ')[1]);
+                    currentDirectory = process.cwd();
+                    console.log(`\nYou are currently in ${currentDirectory}\n`);
+                    question();
+                    break;
+                } catch {
+                    console.error('Operation failed');
+                    question();
+                    break;
+                }
             case 'ls':
                 try {
                     const directoryContent = await readdir(currentDirectory, { withFileTypes: true});
