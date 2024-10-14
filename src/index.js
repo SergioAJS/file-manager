@@ -49,10 +49,9 @@ const question = () => {
                     process.chdir(command.split(' ')[1]);
                     currentDirectory = process.cwd();
                     console.log(`\nYou are currently in ${currentDirectory}\n`);
-                    question();
-                    break;
                 } catch {
                     console.error('Operation failed');
+                } finally {
                     question();
                     break;
                 }
@@ -71,15 +70,12 @@ const question = () => {
                         Name: content.name,
                         Type: content.isDirectory() ? 'Directory' : 'File'
                     })))
-    
-                    question();
-                    break;
                 } catch {
                     console.error('Operation failed');
+                } finally {
                     question();
                     break;
                 }
-                break;
             case `${command.match(/^cat{1}\s.*/)}`:
                 const readFileStream = async () => {
                     return new Promise((resolve, reject) => {
@@ -101,10 +97,9 @@ const question = () => {
                 try {
                     await readFileStream();
                     console.log('\n\nFile reading completed');
-                    question();
-                    break;
                 } catch {
                     console.error('Operation failed');
+                } finally {
                     question();
                     break;
                 }
@@ -143,11 +138,9 @@ const question = () => {
                     const hash = createHash('sha256').update(content).digest('hex')
                 
                     process.stdout.write(hash + '\n');
-    
-                    question();
-                    break;
                 } catch {
                     console.error('Operation failed');
+                } finally {
                     question();
                     break;
                 }
