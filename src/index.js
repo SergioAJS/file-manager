@@ -3,9 +3,10 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import readLine from 'node:readline';
 import process from 'node:process';
-import fs from 'node:fs';
+import fs, { createReadStream } from 'node:fs';
 import os from 'node:os';
-import { opendir, readdir } from 'node:fs/promises';
+import { opendir, readdir, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -82,10 +83,41 @@ const question = () => {
                     })))
     
                     question();
+                    break;
                 } catch {
                     console.error('Operation failed');
+                    question();
+                    break;
                 }
                 break;
+            case `${command.match(/^cat{1}\s.*/)}`:
+                const readFileStream = async () => {
+                    return new Promise((resolve, reject) => {
+                        const stream = createReadStream(command.split(' ')[1], { encoding: 'utf8' });
+
+                        stream.on('data', (chunk) => {
+                            process.stdout.write(chunk);
+                        });
+
+                        stream.on('error', () => {
+                            reject('Operation failed');
+                        });
+
+                        stream.on ('end', () => {
+                            resolve();
+                        });
+                    });
+                };
+                try {
+                    await readFileStream();
+                    console.log('\n\nFile reading completed');
+                    question();
+                    break;
+                } catch {
+                    console.error('Operation failed');
+                    question();
+                    break;
+                }
             case 'os --EOL': 
                 const EOL = os.EOL;
                 console.log(`EOL: ${JSON.stringify(EOL)}`);
@@ -114,7 +146,23 @@ const question = () => {
                 console.log(`CPU architecture: ${CPUArchitecture}`);
                 question();
                 break;
+            case `${command.match(/^hash{1}\s.*/)}`:
+                try {
+                    const filePath = command.split(' ')[1];
+                    const content = await readFile(filePath, { encoding: 'utf8' });
+                    const hash = createHash('sha256').update(content).digest('hex')
+                
+                    process.stdout.write(hash + '\n');
+    
+                    question();
+                    break;
+                } catch {
+                    console.error('Operation failed');
+                    question();
+                    break;
+                }
             case '.exit':
+                rl.close();
                 process.exit();
             default:
                 console.log('Invalid input \n');
