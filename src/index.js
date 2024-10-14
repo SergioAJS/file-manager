@@ -1,16 +1,16 @@
 import path from 'node:path';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import readLine from 'node:readline';
 import process from 'node:process';
-import { createReadStream, createWriteStream } from 'node:fs';
 import os from 'node:os';
-import { readdir, readFile, rename, unlink } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
-import { createBrotliCompress, createBrotliDecompress } from 'node:zlib';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { createReadStream, createWriteStream } from 'node:fs';
+import { rename, unlink } from 'node:fs/promises';
+import { up } from './up.js';
+import { cd } from './cd.js';
+import { ls } from './ls.js';
+import { hash } from './hash.js';
+import { compress } from './compress.js';
+import { decompress } from './decompress.js';
+import { cat } from './cat.js';
 
 const rl = readLine.createInterface({
     input: process.stdin,
@@ -39,72 +39,30 @@ const question = () => {
     rl.question('Please enter your command: \n', async (command) => {
         switch (command) {
             case 'up':
-                const parentDirectory = path.dirname(currentDirectory);
-                process.chdir(parentDirectory);
+                up(currentDirectory);
                 currentDirectory = process.cwd();
                 console.log(`\nYou are currently in ${currentDirectory}\n`);
                 question();
                 break;
             case `${command.match(/^cd{1}\s.*/)}`:
                 try {
-                    if (command.split(' ')[1] === '..') {
-                        const parentDirectory = path.dirname(currentDirectory);
-                        process.chdir(parentDirectory);   
-                    } else {
-                        process.chdir(command.split(' ')[1]);
-                    }
+                    cd(currentDirectory, command);
                     currentDirectory = process.cwd();    
                     console.log(`\nYou are currently in ${currentDirectory}\n`);
-                } catch {
-                    console.error('Operation failed');
                 } finally {
                     question();
                     break;
                 };
             case 'ls':
                 try {
-                    const directoryContent = await readdir(currentDirectory, { withFileTypes: true});
-
-                    const sortedDirectoryContent = await directoryContent.toSorted((a, b) => {
-                        if (a.isDirectory() && !b.isDirectory())
-                            return -1;
-                        if (!a.isDirectory() && b.isDirectory())
-                            return 1;
-                    });
-
-                    console.table(sortedDirectoryContent.map(content => ({
-                        Name: content.name,
-                        Type: content.isDirectory() ? 'Directory' : 'File'
-                    })))
-                } catch {
-                    console.error('Operation failed');
+                    await ls(currentDirectory);
                 } finally {
                     question();
                     break;
                 };
             case `${command.match(/^cat{1}\s.*/)}`:
-                const readFileStream = async () => {
-                    return new Promise((resolve, reject) => {
-                        const stream = createReadStream(command.split(' ')[1], { encoding: 'utf8' });
-
-                        stream.on('data', (chunk) => {
-                            process.stdout.write(chunk);
-                        });
-
-                        stream.on('error', () => {
-                            reject('Operation failed');
-                        });
-
-                        stream.on ('end', () => {
-                            resolve();
-                        });
-                    });
-                };
                 try {
-                    await readFileStream();
-                    console.log('\n\nFile reading completed');
-                } catch {
-                    console.error('Operation failed');
+                    await cat(command);
                 } finally {
                     question();
                     break;
@@ -181,7 +139,6 @@ const question = () => {
                     question();
                     break;
                 };
-
             case 'os --EOL':
                 const EOL = os.EOL;
                 console.log(`EOL: ${JSON.stringify(EOL)}`);
@@ -212,65 +169,21 @@ const question = () => {
                 break;
             case `${command.match(/^hash{1}\s.*/)}`:
                 try {
-                    const filePath = command.split(' ')[1];
-                    const content = await readFile(filePath, { encoding: 'utf8' });
-                    const hash = createHash('sha256').update(content).digest('hex');
-
-                    process.stdout.write(hash + '\n');
-                } catch {
-                    console.error('Operation failed');
+                    await hash(command);
                 } finally {
                     question();
                     break;
                 };
             case `${command.match(/^compress{1}\s.*/)}`:
                 try {
-                    const sourceFile = command.split(' ')[1];
-                    const destinationDirectory = command.split(' ')[2];
-                    const destinationFilePath = path.join(destinationDirectory, `${path.basename(sourceFile, 'txt')}br`);
-
-                    const readStream = createReadStream(sourceFile);
-                    const writeStream = createWriteStream(destinationFilePath);
-
-                    const brotliCompress = createBrotliCompress();
-
-                    readStream.pipe(brotliCompress).pipe(writeStream);
-
-                    writeStream.on('finish', async () => {                        
-                        try {
-                            await unlink(sourceFile);
-                        } catch {
-                            console.error('Operation failed');
-                        }
-                    });
-                } catch {
-                    console.error('Operation failed');
+                    compress(command);
                 } finally {
                     question();
                     break;
                 };
             case `${command.match(/^decompress{1}\s.*/)}`:
                 try {
-                    const sourceFile = command.split(' ')[1];
-                    const destinationDirectory = command.split(' ')[2];
-                    const destinationFilePath = path.join(destinationDirectory, `${path.basename(sourceFile, 'br')}txt`);
-
-                    const readStream = createReadStream(sourceFile);
-                    const writeStream = createWriteStream(destinationFilePath);
-
-                    const brotliDeompress = createBrotliDecompress();
-
-                    readStream.pipe(brotliDeompress).pipe(writeStream);
-
-                    writeStream.on('finish', async () => {                        
-                        try {
-                            await unlink(sourceFile);
-                        } catch {
-                            console.error('Operation failed');
-                        }
-                    });
-                } catch {
-                    console.error('Operation failed');
+                    decompress(command);
                 } finally {
                     question();
                     break;
@@ -278,7 +191,7 @@ const question = () => {
             case '.exit':
                 process.exit();
             default:
-                console.log('Invalid input \n');
+                console.error('Invalid input \n');
                 question();
         };
     });
