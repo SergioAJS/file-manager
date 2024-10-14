@@ -32,16 +32,6 @@ try {
 
 let currentDirectory = process.cwd();
 
-// try {
-//     const content = await readdir(__dirname);
-//     for (const file of content)
-//         console.log(`Directory content: ${file}`);
-// } catch {
-//     console.error('Operation failed');
-// }
-
-// console.log(`Current directory: ${__dirname}`);
-// console.log(`Home directory: ${os.homedir()}`);
 console.log(`You are currently in ${currentDirectory}\n`);
 
 const question = () => {
@@ -162,7 +152,6 @@ const question = () => {
                     break;
                 }
             case '.exit':
-                rl.close();
                 process.exit();
             default:
                 console.log('Invalid input \n');
@@ -173,20 +162,7 @@ const question = () => {
 
 question();
 
-// const parentDirectory = path.dirname(currentDirectory);
-// process.chdir(parentDirectory);
-
-// console.log(parentDirectory);
-
-// console.log(`Please enter your command`);
-
-// (function gg(question = '') {
-//     rl.question(question, (answer) => {
-//       if (answer.match(/^.exit/)) {
-//         process.exit();
-//       }
-//       gg(question = '');
-//     });
-//   })();
-
-process.on('exit', () => console.log(`Thank you for using File Manager, ${getUsername().join('').split('=')[1]}, goodbye!`));
+process.on('exit', () => {
+    rl.close();
+    console.log(`Thank you for using File Manager, ${getUsername().join('').split('=')[1]}, goodbye!`)
+});
